@@ -60,7 +60,7 @@ The core of this project is to explore how ray tracing works on the CPU and to c
 
 Here’s an example of how the rendering looks:
 
-![Sample Render](images/sample-render.png)
+![Sample Render](src/assets/Sample-Render.png)
 
 You can add more examples or use images generated from the project as visual representations here.
 
