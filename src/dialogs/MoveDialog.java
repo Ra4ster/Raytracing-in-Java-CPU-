@@ -6,7 +6,9 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.io.IOException;
 
+import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -24,11 +26,18 @@ import com.Vec3;
 
 public class MoveDialog extends JDialog {
 	
+	/***/
+	private static final long serialVersionUID = 1L;
 	private final JPanel contentPanel = new JPanel();
 	private JLabel zLabel;
 
 	public MoveDialog(CanvasPanel canvasPanel, Vec3 origin) {
 		setTitle("Move Dialog");
+		try {
+			setIconImage(ImageIO.read(this.getClass().getResourceAsStream("/assets/Drag.png")));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		setBounds(100, 100, 450, 300);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setBackground(new Color(0, 0, 0));
