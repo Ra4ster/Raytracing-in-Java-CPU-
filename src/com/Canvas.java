@@ -3,6 +3,9 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Canvas extends BufferedImage {
 	
@@ -78,14 +81,38 @@ public class Canvas extends BufferedImage {
 	 * @param scene Grouping of shapes and lights
 	 */
 	public void paintScene(Camera camera, Scene scene) {
-		for (int y=-this.getHeight()/2+1; y < this.getHeight()/2; y++) {
-			for (int x=-this.getWidth()/2+1; x < this.getWidth()/2; x++) {
-				Vec3 distance = camera.canvasToViewport(this, x, y);
-				
-				Color color = scene.TraceRay(camera, new Ray(camera.origin, distance), 1, Double.MAX_VALUE);
-				this.putPixel(x, y, color);
-			}
+		int numThreads = Runtime.getRuntime().availableProcessors(); // Running multiply raytraces parallel
+		ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+		
+		int width = this.getWidth();
+		int height = this.getHeight();
+		int stripHeight = height/numThreads;
+		
+		for (int i=0; i < numThreads; i++) { // parallel computing
+			int startY = -height/2 + 1 + i*stripHeight;
+			int endY = (i == numThreads - 1) ? height/2 : startY+stripHeight;
+			
+			executor.submit(() -> {
+				for (int y=startY; y < endY; y++) {
+					for (int x=-width/2 + 1; x < width/2; x++) {
+						Vec3 direction = camera.canvasToViewport(this, x, y);
+						direction = camera.rotate(direction);
+						
+						Color color = scene.TraceRay(camera.origin, direction, 0.001, Double.POSITIVE_INFINITY, 3);
+						this.putPixel(x, y, color);
+					}
+				}
+			});
 		}
+		
+		executor.shutdown();
+		try {
+			executor.awaitTermination(60, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+		this.panel.repaint();
 	}
 
 }

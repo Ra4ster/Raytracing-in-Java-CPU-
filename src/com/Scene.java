@@ -29,6 +29,19 @@ public class Scene {
 		this.lights=lights;
 	}
 	
+	/**
+	 * Helper method for computing a specular reflection.
+	 * 
+	 * @param r direction vector of a ray
+	 * @param normal Normal (vector)
+	 * @return 2*N*dot(N,R) - R
+	 */
+	public Vec3 reflectRay(Vec3 r, Vec3 normal) {
+		return normal.multiply(2)
+				.multiply(normal.dotProduct(r))
+				.subtract(r);
+	}
+	
 	public Color ComputeLighting(Vec3 point, Vec3 normal, Vec3 v, int specular) {
 		Color color = new Color(0,0,0);
 		
@@ -46,8 +59,7 @@ public class Scene {
 					L = ((DirectionalLight)light).direction;
 					t_max = Double.POSITIVE_INFINITY;
 				}
-				Intersection intersection = ClosestIntersection(new Ray(point, L), 0.001, t_max);
-				if (intersection.shape() != null) continue;
+				if (IntersectsAny(point, L, 0.001, t_max)) continue;
 				
 				// Diffuse:
 				L = L.normalize();
@@ -59,7 +71,7 @@ public class Scene {
 				}
 				// Specular:
 				if (specular != -1) {
-					Vec3 R = normal.multiply(2).multiply(normal.dotProduct(L)).subtract(L);
+					Vec3 R = reflectRay(L, normal);
 					double r_dot_v = R.dotProduct(v);
 					if (r_dot_v > 0) {
 						double tempVal = Math.pow(r_dot_v/(R.length()*v.length()), specular);
@@ -73,13 +85,13 @@ public class Scene {
 		return color;
 	}
 	
-	public Intersection ClosestIntersection(Ray ray, double t_min, double t_max) {
+	public Intersection ClosestIntersection(Vec3 O, Vec3 D, double t_min, double t_max) {
 		double closest_t = Double.POSITIVE_INFINITY;
 		Shape closest_shape = null;
 		
 		for (Shape shape : shapes) {
 			if (shape instanceof Sphere) {
-				double[] placesHit = ((Sphere)shape).IntersectRay(ray);
+				double[] placesHit = ((Sphere)shape).IntersectRay(new Ray(O, D));
 				if (placesHit[0] <= t_max && placesHit[0] >= t_min && placesHit[0] < closest_t) {
 					closest_t = placesHit[0];
 					closest_shape = shape;
@@ -96,27 +108,63 @@ public class Scene {
 	}
 	
 	/**
+	 * Checks if the ray intersects any shape in the scene
+	 * 
+	 * This is used for shadow rays: we only care whether a ray is blocked or not.
+	 * 
+	 * @param O
+	 * @param D
+	 * @param t_min
+	 * @param t_max
+	 * @return true if any intersection is found, else false
+	 */
+	public boolean IntersectsAny(Vec3 O, Vec3 D, double t_min, double t_max) {
+		
+		for (Shape shape : shapes) {
+			if (shape instanceof Sphere) {
+				double[] ts = ((Sphere)shape).IntersectRay(new Ray(O, D));
+				for (double t : ts) {
+					if (t >= t_min && t <= t_max) return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
 	 * Traces a single ray through all shapes in {@code this}, returning the color of the first-hit shape.
 	 * 
-	 * @param camera Camera
-	 * @param ray Ray
+	 * @param O origin
+	 * @param D direction
 	 * @param t_min minimum distance looked
 	 * @param t_max maximum distance looked
+	 * @param recursion how many times it should be traced (used for mirrors; 0 if not one)
 	 * @return closest shape's color
 	 */
-	public Color TraceRay(Camera camera, Ray ray, double t_min, double t_max) {
+	public Color TraceRay(Vec3 O, Vec3 D, double t_min, double t_max, int recursion) {
 		
-		Intersection intersection = ClosestIntersection(ray, t_min, t_max);
+		Intersection intersection = ClosestIntersection(O, D, t_min, t_max);
 		Shape closest_shape = intersection.shape();
 		double closest_t = intersection.t();
 		
 		if(closest_shape == null) return canvas.BACKGROUND_COLOR;
 		
-		Vec3 point = camera.origin.add(ray.direction.multiply(closest_t)); // P = O + tD
+		// Compute local color:
+		Vec3 point = O.add(D.multiply(closest_t)); // P = O + tD
 		Vec3 normal = point.subtract(closest_shape.center); // N = P - shape.center
 		normal = normal.normalize(); // N = N/length(N)
+		Color lighting = ComputeLighting(point, normal, D.multiply(-1), closest_shape.specular);
+		Color local_color = Light.multiplyColors(closest_shape.color, lighting);
 		
-		Color lighting = ComputeLighting(point, normal, ray.direction.multiply(-1), closest_shape.specular);
-		return Light.multiplyColors(closest_shape.color, lighting);
+		// If we hit the recursion limit or the object isn't reflective, we're done:
+		double r = closest_shape.reflective;
+		if (recursion <= 0 || r <= 0) return local_color;
+		
+		// Compute the reflected color:
+		Vec3 reflect = reflectRay(D.multiply(-1), normal);
+		Color reflected_color = TraceRay(point, reflect, 0.001, Double.POSITIVE_INFINITY, recursion-1); // recursion call
+		
+		return Light.addColors(Light.intensityTimesColor(local_color, 1-r), Light.intensityTimesColor(reflected_color, r));
 	}
 }

@@ -2,7 +2,7 @@ package com;
 
 public class Vec3 {
 	
-	double x,y,z;
+	public double x,y,z;
 	
 	public Vec3(double x, double y, double z) {
 		this.x=x;

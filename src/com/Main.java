@@ -2,20 +2,13 @@ package com;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
-import javax.swing.BoxLayout;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSlider;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
 import light.AmbientLight;
 import light.DirectionalLight;
 import light.Light;
@@ -28,10 +21,13 @@ public class Main {
 	public static Shape[] spheres() {
 		Sphere sphere1 = new Sphere(1, new Vec3(0, -1, 3), Color.RED);
 		sphere1.setSpecular(500);
+		sphere1.setReflective(0.5);
 		Sphere sphere2 = new Sphere(1, new Vec3(2, 0, 4), Color.BLUE);
 		sphere2.setSpecular(500);
+		sphere2.setReflective(0);
 		Sphere sphere3 = new Sphere(1, new Vec3(-2, 0, 4), Color.GREEN);
 		sphere3.setSpecular(10);
+		sphere3.setReflective(0);
 		Sphere sphereFloor = new Sphere(5000, new Vec3(0, -5001, 0), Color.YELLOW);
 		sphereFloor.setSpecular(1000);
 		
@@ -47,119 +43,76 @@ public class Main {
 	}
 	
 	public static void loadAll(Scene scene, Canvas canvas, Camera camera) {
-		
 		scene.setShapes(spheres());
-		
 		scene.setLights(lights());
-		
 		camera.setViewport(1, 1, 1);
-		
 		canvas.paintScene(camera, scene);
 	}
 	
 	public static void main(String[] args) {
-		int width = 800, height = 800;
+		int width = 800, height = 600;
 		
 		SwingUtilities.invokeLater(() -> {
-			JFrame frame = new JFrame("Raytracer");
+			CanvasPanel canvasPanel = new CanvasPanel();
+			MainFrame frame = new MainFrame("Raytracer", canvasPanel);
 			try {
 				frame.setIconImage(ImageIO.read(Main.class.getResourceAsStream("/assets/Picture.png")));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 			
-			CanvasPanel canvasPanel = new CanvasPanel();
+
 			
 			Canvas canvas = new Canvas(width, height, Color.BLACK); // black background
+			Camera camera = new Camera(new Vec3(0,0,0));
+			Scene scene = new Scene(camera, canvas);
+			
+			canvasPanel.addComponentListener(new ComponentAdapter() {
+				@Override
+				public void componentResized(ComponentEvent e) {
+					int newWidth = canvasPanel.getWidth();
+					int newHeight = canvasPanel.getHeight();
+					
+					if (newWidth > 0 && newHeight > 0) {
+						Canvas newCanvas = new Canvas(newWidth, newHeight, Color.BLACK);
+						newCanvas.setPanel(canvasPanel);
+						canvasPanel.attach(camera, scene, newCanvas);
+						
+						double aspectRatio = (double)newWidth / newHeight;
+						camera.setViewport(aspectRatio, 1, 1);
+						
+						scene.canvas = newCanvas;
+						newCanvas.paintScene(camera, scene);
+						canvasPanel.repaint();
+					}
+				}
+			});
+			canvasPanel.addMouseWheelListener(e -> {
+			    int notches = e.getWheelRotation(); // negative = zoom in, positive = zoom out
+			    
+			    double zoomSpeed = 0.5; // adjust speed of zoom
+			    double newZ = camera.origin.z + notches * zoomSpeed;
+			    
+			    camera.setOrigin(new Vec3(camera.origin.x, camera.origin.y, newZ));
+			    
+			    // Repaint scene with new camera position
+			    scene.canvas.paintScene(camera, scene);
+			    canvasPanel.repaint();
+			});
 			
 			canvas.setPanel(canvasPanel);
-			
+			canvasPanel.attach(camera, scene, canvas);
+			canvasPanel.setGizmoMode(GizmoMode.MOVE);
 			canvas.fill(Color.BLACK);
 			
-			Camera camera = new Camera(new Vec3(0,0,0));
-			
-			
-			Scene scene = new Scene(camera, canvas);
 			
 			loadAll(scene, canvas, camera);
 			
 			frame.getContentPane().add(canvasPanel, BorderLayout.CENTER);
 			
-			JPanel CameraX = new JPanel();
-			frame.getContentPane().add(CameraX, BorderLayout.SOUTH);
-			CameraX.setLayout(new BoxLayout(CameraX, BoxLayout.X_AXIS));
-			
-			JLabel xLabel = new JLabel("X");
-			xLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-			xLabel.setMaximumSize(new Dimension(30, 14));
-			xLabel.setMinimumSize(new Dimension(30, 14));
-			xLabel.setPreferredSize(new Dimension(30, 14));
-			CameraX.add(xLabel);
-			
-			JSlider xSlider = new JSlider(-10,10);
-			xSlider.addChangeListener(new ChangeListener() {
-
-				@Override
-				public void stateChanged(ChangeEvent e) {
-					Vec3 newOrigin = camera.origin;
-					newOrigin.x = xSlider.getValue();
-					camera.setOrigin(newOrigin);
-					canvas.paintScene(camera, scene);
-					frame.repaint();
-				}
-			});
-			CameraX.add(xSlider);
-			
-			JPanel CameraY = new JPanel();
-			CameraY.setLayout(new BoxLayout(CameraY, BoxLayout.Y_AXIS));
-			
-			JLabel yLabel = new JLabel("Y");
-			yLabel.setMinimumSize(new Dimension(30, 14));
-			
-			CameraY.add(yLabel);
-			
-			frame.getContentPane().add(CameraY, BorderLayout.EAST);
-			
-			JSlider ySlider = new JSlider(-10,10);
-			ySlider.addChangeListener(new ChangeListener() {
-
-				@Override
-				public void stateChanged(ChangeEvent e) {
-					Vec3 newOrigin = camera.origin;
-					newOrigin.y = ySlider.getValue();
-					camera.setOrigin(newOrigin);
-					canvas.paintScene(camera, scene);
-					frame.repaint();
-				}
-			});
-			ySlider.setOrientation(SwingConstants.VERTICAL);
-			CameraY.add(ySlider);
-			
-			JPanel CameraZ = new JPanel();
-			frame.getContentPane().add(CameraZ, BorderLayout.WEST);
-			CameraZ.setLayout(new BoxLayout(CameraZ, BoxLayout.Y_AXIS));
-			
-			JSlider zSlider = new JSlider(-10,10);
-			zSlider.addChangeListener(new ChangeListener() {
-
-				@Override
-				public void stateChanged(ChangeEvent e) {
-					Vec3 newOrigin = camera.origin;
-					newOrigin.z = zSlider.getValue();
-					camera.setOrigin(newOrigin);
-					canvas.paintScene(camera, scene);
-					frame.repaint();
-				}
-			});
-			zSlider.setOrientation(SwingConstants.VERTICAL);
-			CameraZ.add(zSlider);
-			
-			JLabel zLabel = new JLabel("Z");
-			CameraZ.add(zLabel);
-			
-			
 			frame.pack();
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
 			frame.setVisible(true);
 			
 			frame.repaint();	
