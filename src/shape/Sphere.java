@@ -5,6 +5,7 @@ import java.awt.Color;
 import com.Ray;
 import com.Vec3;
 
+
 public class Sphere extends Shape {
 	
 	public double r;

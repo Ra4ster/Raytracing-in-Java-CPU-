@@ -131,7 +131,6 @@ public class Scene {
 		
 		return false;
 	}
-	
 	/**
 	 * Traces a single ray through all shapes in {@code this}, returning the color of the first-hit shape.
 	 * 
@@ -145,8 +144,9 @@ public class Scene {
 	public Color TraceRay(Vec3 O, Vec3 D, double t_min, double t_max, int recursion) {
 		
 		Intersection intersection = ClosestIntersection(O, D, t_min, t_max);
-		Shape closest_shape = intersection.shape();
-		double closest_t = intersection.t();
+		if (intersection == null) return canvas != null ? canvas.BACKGROUND_COLOR : Color.BLACK;
+		Shape closest_shape = intersection.shape;
+		double closest_t = intersection.t;
 		
 		if(closest_shape == null) return canvas.BACKGROUND_COLOR;
 		

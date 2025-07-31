@@ -1,5 +1,8 @@
 package com;
 
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 
 import javax.swing.JFrame;
@@ -14,6 +17,7 @@ public class MainFrame extends JFrame {
 	
 	/**/
 	private static final long serialVersionUID = 1L;
+	@SuppressWarnings("unused")
 	private CanvasPanel canvasPanel;
 	
 	public MainFrame(String str, CanvasPanel canvasPanel) {
@@ -38,7 +42,7 @@ public class MainFrame extends JFrame {
 		fileMenu.add(saveItem);
 		
 		JMenuItem exitItem = new JMenuItem("Exit");
-		exitItem.addActionListener(e -> {this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));});
+		exitItem.addActionListener(e -> {this.dispose();});
 		fileMenu.add(exitItem);
 		
 		JMenu viewMenu = new JMenu("View");
@@ -47,12 +51,7 @@ public class MainFrame extends JFrame {
 		
 		JMenuItem resetItem = new JMenuItem("Reset Camera");
 		resetItem.addActionListener(e -> {
-			canvasPanel.camera.setOrigin(new Vec3(0,0,0));
-			canvasPanel.camera.pitch=0;
-			canvasPanel.camera.roll=0;
-			canvasPanel.camera.yaw=0;
-			canvasPanel.canvas.paintScene(canvasPanel.camera, canvasPanel.scene);
-			canvasPanel.repaint();
+			canvasPanel.reset();
 		});
 		viewMenu.add(resetItem);
 		
@@ -85,10 +84,35 @@ public class MainFrame extends JFrame {
 		
 		JMenuItem rotateItem = new JMenuItem("Rotate Camera");
 		rotateItem.addActionListener(e -> {
-			RotateDialog rotate = new RotateDialog(canvasPanel, new Vec3(canvasPanel.camera.pitch, canvasPanel.camera.yaw, canvasPanel.camera.roll));
+			RotateDialog rotate = new RotateDialog(canvasPanel);
 			rotate.setVisible(true);
 		});
 		toolMenu.add(rotateItem);
+		
+		JMenuItem fpsItem = new JMenuItem("FPS Tracker");
+		fpsItem.addActionListener(e -> {
+			canvasPanel.setFPSActive(!canvasPanel.fpsActive);
+			canvasPanel.repaint();
+		});
+		toolMenu.add(fpsItem);
+		
+		addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_R && (e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0) {
+					canvasPanel.setGizmoMode(GizmoMode.ROTATE);
+				} else if (e.getKeyCode() == KeyEvent.VK_M && (e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0) {
+					canvasPanel.setGizmoMode(GizmoMode.MOVE);
+				} else if (e.getKeyCode() == KeyEvent.VK_R && (e.getModifiersEx() & KeyEvent.ALT_DOWN_MASK) != 0) {
+					canvasPanel.reset();
+				} else if (e.getKeyCode() == KeyEvent.VK_R && (e.getModifiersEx() & KeyEvent.SHIFT_DOWN_MASK) != 0) {
+					RotateDialog rotate = new RotateDialog(canvasPanel);
+					rotate.setVisible(true);
+			}else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+					MainFrame.this.dispose();
+				}
+			}
+		});
 		
 		JMenu gizmoMenu = new JMenu("Gizmos");
 		gizmoMenu.setMnemonic('G');

@@ -33,6 +33,21 @@ public class Vec3 {
 		return new Vec3(x/length, y/length, z/length);
 	}
 	
+	public void set(double x, double y, double z) {
+		this.x=x;
+		this.y=y;
+		this.z=z;
+	}
+	
+	public double get(int i) {
+		switch (i) {
+		case 0:return this.x;
+		case 1:return this.y;
+		case 2:return this.z;
+		default:return Double.NaN;
+		}
+	}
+	
 	@Override
 	public String toString() {
 		return "(" + x + ", " + y + ", " + z + ")";

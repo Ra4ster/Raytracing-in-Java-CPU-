@@ -23,7 +23,11 @@ public class CanvasPanel extends JPanel {
 	public Camera camera;
 	public Scene scene;
 	public BufferedImage image;
+	
+	private long lastFpsTime = System.nanoTime();
+	private int fps, framesThisSecond;
 	private Rectangle gizmoBounds = new Rectangle();
+	public boolean fpsActive = false;
 	
 	public void setImage(BufferedImage image) {
 		this.image=image;
@@ -139,6 +143,13 @@ public class CanvasPanel extends JPanel {
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
+		// FPS
+		long now  = System.nanoTime();
+		if (now - lastFpsTime >= 1_000_000_000L) { // Per second
+			fps = framesThisSecond;
+			framesThisSecond=0; // Count frames
+			lastFpsTime=now;
+		}
 		
 		if (image != null) {
 			g.drawImage(image, 0, 0, getWidth(), getHeight(), null);
@@ -148,6 +159,12 @@ public class CanvasPanel extends JPanel {
 			drawRotateGizmo(g2d);
 		} else {
 			drawMoveGizmo(g2d);
+		}
+		if (fpsActive) {
+
+			framesThisSecond++;
+			g2d.setColor(Color.YELLOW);
+			g2d.drawString("FPS: " + fps, 10, 20);
 		}
 	}
 	
@@ -213,5 +230,18 @@ public class CanvasPanel extends JPanel {
 	    g2.setColor(activeAxis == 'Z' ? new Color(30, 144, 255) : new Color(0, 102, 204));
 	    g2.drawOval(centerX - axisLength, centerY-axisLength, axisLength*2, axisLength*2);
 	    g2.drawString("Z", centerX - axisLength - 3, centerY + axisLength + 3);
+	}
+	
+	public void setFPSActive(boolean val) {
+		fpsActive=val;
+	}
+	
+	public void reset() {
+		camera.setOrigin(new Vec3(0,0,0));
+		camera.pitch=0;
+		camera.roll=0;
+		camera.yaw=0;
+		canvas.paintScene(camera, scene);
+		repaint();
 	}
 }

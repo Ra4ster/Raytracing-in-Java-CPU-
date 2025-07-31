@@ -50,7 +50,7 @@ public class Main {
 	}
 	
 	public static void main(String[] args) {
-		int width = 800, height = 600;
+		int width = 400, height = 300;
 		
 		SwingUtilities.invokeLater(() -> {
 			CanvasPanel canvasPanel = new CanvasPanel();
@@ -60,8 +60,6 @@ public class Main {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			
-
 			
 			Canvas canvas = new Canvas(width, height, Color.BLACK); // black background
 			Camera camera = new Camera(new Vec3(0,0,0));
@@ -115,7 +113,10 @@ public class Main {
 			frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
 			frame.setVisible(true);
 			
-			frame.repaint();	
+			new javax.swing.Timer(16, e -> {
+				scene.canvas.paintScene(camera, scene);
+				canvasPanel.repaint();
+			}).start();
 		});
 	}
 }

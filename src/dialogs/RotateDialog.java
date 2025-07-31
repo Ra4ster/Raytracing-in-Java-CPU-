@@ -31,7 +31,7 @@ public class RotateDialog extends JDialog {
 	private final JPanel contentPanel = new JPanel();
 	private JLabel zLabel;
 
-	public RotateDialog(CanvasPanel canvasPanel, Vec3 origin) {
+	public RotateDialog(CanvasPanel canvasPanel) {
 		setTitle("Rotate Dialog");
 		try {
 			setIconImage(ImageIO.read(this.getClass().getResourceAsStream("/assets/Rotate.png")));
@@ -57,7 +57,7 @@ public class RotateDialog extends JDialog {
 			}
 			{
 				JSpinner xSpinner = new JSpinner();
-				xSpinner.setModel(new SpinnerNumberModel(Double.valueOf(origin.x), null, null, Double.valueOf(1)));
+				xSpinner.setModel(new SpinnerNumberModel(Double.valueOf(canvasPanel.camera.yaw), null, null, Double.valueOf(1)));
 				xSpinner.setBorder(new SoftBevelBorder(BevelBorder.LOWERED, null, null, null, null));
 				xSpinner.setFont(new Font("Verdana", Font.PLAIN, 46));
 				xSpinner.setEditor(new JSpinner.NumberEditor(xSpinner, "0.0"));
@@ -83,7 +83,7 @@ public class RotateDialog extends JDialog {
 			}
 			{
 				JSpinner ySpinner = new JSpinner();
-				ySpinner.setModel(new SpinnerNumberModel(Double.valueOf(origin.y), null, null, Double.valueOf(1)));
+				ySpinner.setModel(new SpinnerNumberModel(Double.valueOf(canvasPanel.camera.pitch), null, null, Double.valueOf(1)));
 				ySpinner.setPreferredSize(new Dimension(200, 70));
 				ySpinner.setFont(new Font("Verdana", Font.PLAIN, 46));
 				ySpinner.setEditor(new JSpinner.NumberEditor(ySpinner, "0.0"));
@@ -109,7 +109,7 @@ public class RotateDialog extends JDialog {
 			}
 			{
 				JSpinner zSpinner = new JSpinner();
-				zSpinner.setModel(new SpinnerNumberModel(Double.valueOf(origin.z), null, null, Double.valueOf(1)));
+				zSpinner.setModel(new SpinnerNumberModel(Double.valueOf(canvasPanel.camera.roll), null, null, Double.valueOf(1)));
 				zSpinner.setPreferredSize(new Dimension(200, 70));
 				zSpinner.setFont(new Font("Verdana", Font.PLAIN, 46));
 				zSpinner.setEditor(new JSpinner.NumberEditor(zSpinner, "0.0"));
